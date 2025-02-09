@@ -1,3 +1,5 @@
 fastapi
 uvicorn
 gunicorn
+requests
+bs4
