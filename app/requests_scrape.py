@@ -55,7 +55,9 @@ def ensure_about_url(url: str) -> str:
 
 @app.post("/check_heatlh")
 async def check_health():
-    return requests.get("https://ifconfig.me/")
+    response = requests.get("https://ifconfig.me/")
+
+    return {"outbound_ip": response.text}
 
 
 @app.post(
