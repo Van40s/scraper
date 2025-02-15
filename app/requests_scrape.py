@@ -57,7 +57,7 @@ def ensure_about_url(url: str) -> str:
 async def check_health():
     response = requests.get("https://ifconfig.me/")
 
-    return {"outbound_ip": response.text}
+    return {"outbound_ip": response.text, "proxy_health": scraper.check_proxy_health()}
 
 
 @app.post(

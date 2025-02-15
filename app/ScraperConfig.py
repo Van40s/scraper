@@ -36,6 +36,17 @@ class ScraperConfig:
             self.proxy = None
 
 
+    def check_proxy_health(self):
+        url = 'https://ip.smartproxy.com/json'
+
+        result = requests.get(url, proxies={
+            'http': self.proxy,
+            'https': self.proxy
+        })
+
+        return result.json()
+
+
     def scrape_page(self, facebook_page_url):
         response = requests.get(facebook_page_url, proxies={
             'http': self.proxy,
