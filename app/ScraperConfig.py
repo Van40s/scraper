@@ -30,6 +30,8 @@ class ScraperConfig:
 
         username = os.getenv("PROXY_USERNAME", None)
         password = os.getenv("PROXY_PASSWORD", None)
+        print(username)
+        print(password)
         if username and password:
             self.proxy = f"http://{username}:{password}@dc.smartproxy.com:10000"
         else:
@@ -37,6 +39,13 @@ class ScraperConfig:
 
 
     def scrape_page(self, facebook_page_url):
+        url = 'https://ip.smartproxy.com/json'
+
+        result = requests.get(url, proxies={
+            'http': self.proxy,
+            'https': self.proxy
+        })
+        print(result.text)
         response = requests.get(facebook_page_url, proxies={
             'http': self.proxy,
             'https': self.proxy
@@ -72,3 +81,7 @@ class ScraperConfig:
                 return {}
 
         return gold_data
+
+if __name__ == "__main__":
+    sraper = ScraperConfig()
+    sraper.scrape_page("https://www.facebook.com/ApasievLevica/")
