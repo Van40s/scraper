@@ -1,3 +1,5 @@
+import os
+
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -26,11 +28,19 @@ class ScraperConfig:
             "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
         }
 
-        self.proxies = None
+        username = os.getenv("PROXY_USERNAME", None)
+        password = os.getenv("PROXY_PASSWORD", None)
+        if username and password:
+            self.proxy = f"http://{username}:{password}@dc.smartproxy.com:10000"
+        else:
+            self.proxy = None
 
 
     def scrape_page(self, facebook_page_url):
-        response = requests.get(facebook_page_url, headers=self.headers)
+        response = requests.get(facebook_page_url, proxies={
+            'http': self.proxy,
+            'https': self.proxy
+        }, headers=self.headers)
         soup = BeautifulSoup(response.text, 'html.parser')
         gold_data = None
         for script_tag in soup.find_all('script', type='application/json'):
