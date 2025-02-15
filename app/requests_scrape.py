@@ -48,7 +48,7 @@ def ensure_about_url(url: str) -> str:
     if len(url_suffix_split) == 3 and url_suffix_split[2] == "":
         url += "about"
     elif len(url_suffix_split) == 2:
-        url += "about"
+        url += "/about"
 
     return url
 
