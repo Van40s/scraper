@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from typing import Dict, List
 import uvicorn
+import requests
+
 from ScraperConfig import ScraperConfig
 from PageUrlRequest import PageUrlRequest
 
@@ -49,6 +51,11 @@ def ensure_about_url(url: str) -> str:
         url += "about"
 
     return url
+
+
+@app.post("/check_heatlh")
+async def check_health():
+    return requests.get("https://ifconfig.me/")
 
 
 @app.post(
