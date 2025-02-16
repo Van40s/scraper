@@ -1,4 +1,5 @@
 import os
+from typing import List, Dict
 
 import requests
 from bs4 import BeautifulSoup
@@ -37,21 +38,101 @@ class ScraperConfig:
 
 
     def check_proxy_health(self):
-        url = 'https://ip.smartproxy.com/json'
+        result = None
+        i = 0
+        while i < 3:
+            try:
+                url = 'https://ip.smartproxy.com/json'
 
-        result = requests.get(url, proxies={
-            'http': self.proxy,
-            'https': self.proxy
-        })
+                result = requests.get(url, proxies={
+                    'http': self.proxy,
+                    'https': self.proxy
+                })
+                break
+            except Exception as e:
+                i += 1
+                pass
+
+        if result is None:
+            return {
+                "error": "proxy error"
+            }
 
         return result.json()
 
+    @staticmethod
+    def check_and_parse_url(url: str) -> str:
+        url_suffix = url.split("facebook.com/")[1]
+
+        url_suffix_split = url_suffix.split("/")
+
+        new_url_built_basic = "https://www.facebook.com"
+        path = ""
+        if "/videos/" in url or "/photos/" in url:
+            new_url_built_basic += f"/{url_suffix_split[0]}/about"
+            return new_url_built_basic
+
+        for split in reversed(url_suffix_split):
+            if split in ["p", "people", "about", ""] or "?sk=about" in split:
+                continue
+
+            path += f"/{split}"
+            if split.isdigit():
+                break
+
+        path += "/about"
+        new_url_built_basic += path
+        return new_url_built_basic
+
+    @staticmethod
+    def process_scrape(scrape_list_result: List[dict]) -> Dict[str, any]:
+        final_dict = {}
+        for data in scrape_list_result:
+            profile_fields = data.get("profile_fields", {}).get("nodes", [])
+            for node in profile_fields:
+                field_type = node.get("field_type", "")
+                if field_type:
+                    if field_type == "screenname":
+                        field_type = node.get("list_item_groups", [])[0] \
+                            .get("list_items", [])[0].get("text", {}) \
+                            .get("text")
+
+                    if field_type == "website":
+                        if not final_dict.get("website", []):
+                            final_dict["website"] = []
+
+                    value = node.get("title", {}).get("text", "")
+
+                    if value:
+                        if field_type == "website":
+                            final_dict["website"].append(value)
+                            continue
+                        final_dict[field_type] = value
+
+        return final_dict
+
 
     def scrape_page(self, facebook_page_url):
-        response = requests.get(facebook_page_url, proxies={
-            'http': self.proxy,
-            'https': self.proxy
-        }, headers=self.headers)
+        facebook_page_url = self.check_and_parse_url(facebook_page_url)
+
+        response = None
+        i = 0
+        while i < 3:
+            try:
+                response = requests.get(facebook_page_url, proxies={
+                    'http': self.proxy,
+                    'https': self.proxy
+                }, headers=self.headers)
+                break
+            except Exception as e:
+                i += 1
+                pass
+
+        if response is None:
+            return {
+                "error": "Can't be scraped"
+            }
+
         soup = BeautifulSoup(response.text, 'html.parser')
         gold_data = None
         for script_tag in soup.find_all('script', type='application/json'):
@@ -82,4 +163,6 @@ class ScraperConfig:
                 print(f"Error decoding JSON from a script tag. {e}")
                 return {}
 
-        return gold_data
+        processed = self.process_scrape(gold_data)
+
+        return processed
