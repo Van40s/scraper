@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict
-
+from urllib.parse import urlparse, parse_qs
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -60,6 +60,21 @@ class ScraperConfig:
 
         return result.json()
 
+
+    @staticmethod
+    def extract_facebook_id(url):
+        # Parse the URL
+        parsed_url = urlparse(url)
+
+        # Extract query parameters
+        query_params = parse_qs(parsed_url.query)
+
+        # Get the 'id' value
+        fb_id = query_params.get("id", [None])[0]
+
+        return fb_id
+
+
     @staticmethod
     def check_and_parse_url(url: str) -> str:
         url_suffix = url.split("facebook.com/")[1]
@@ -72,8 +87,12 @@ class ScraperConfig:
             new_url_built_basic += f"/{url_suffix_split[0]}/about"
             return new_url_built_basic
 
+        if "profile.php?id=" in url:
+            facebook_id = ScraperConfig.extract_facebook_id(url)
+            return f"{new_url_built_basic}/{facebook_id}/about"
+
         for split in reversed(url_suffix_split):
-            if split in ["p", "people", "about", ""] or "?sk=about" in split:
+            if split in ["p", "people", "about", ""] or "?sk=about" in split or "?locale=" in split:
                 continue
 
             path += f"/{split}"
